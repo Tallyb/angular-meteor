@@ -1,4 +1,5 @@
 {{#template name="tutorialAngular2.step_08.html"}}
+{{> downloadPreviousStep stepName="step_07"}} 
 
 In this section we'll look at using Meteor Accounts & take a quick detour into using Services in Angular 2.
 
@@ -44,20 +45,7 @@ Note: An Angular 2 component version of `loginButtons` is in the works, and can 
 
 For now, we can add `loginButtons` to our `index.html`, which will still work.
 
-
-__`index.html`:__
-
-    <head>
-      <base href="/">
-    </head>
-    <body>
-        {{dstache}}> loginButtons}}
-
-        <app></app>
-
-        <script>System.import('client/app');</script>
-    </body>
-
+{{> DiffBox tutorialName="angular2-meteor" step="8.1"}}
 
 Run the code, create an account, login, logout...
 
@@ -67,24 +55,7 @@ Now that we have our account system, we can start defining our security rules fo
 
 Let's go to the model folder and change the file to look like this:
 
-__`model/parties.ts`:__
-
-    Parties = new Mongo.Collection("parties");
-
-    Parties.allow({
-      insert: function (party) {
-        var userId = Meteor.userId();
-        return userId && party.owner === userId;
-      },
-      update: function (party, fields, modifier) {
-        var userId = Meteor.userId();
-        return userId && party.owner === userId;
-      },
-      remove: function (party) {
-        var userId = Meteor.userId();
-        return userId && party.owner === userId;
-      }
-    });
+{{> DiffBox tutorialName="angular2-meteor" step="8.3"}}
 
 ## Mongo Commands (insert, update, remove)
 
@@ -133,48 +104,15 @@ Let's take our current user's id and set it as the owner id of the party we are 
 
 If you're using TypeScript, you'll have to adjust your IParty interface:
 
-__`typings/socially/socially.d.ts`:__
-
-    interface IParty {
-      _id?: string;
-      name: string;
-      description: string;
-      user: string;
-    }
+{{> DiffBox tutorialName="angular2-meteor" step="8.4"}}
 
 Change the code for the add button in `parties-form.ts` to to also insert a user:
 
-__`client/parties-form/parties-form.ts`:__
-
-    export class PartiesForm {
-      constructor() {...}
-        add() {
-
-          if (this.partiesForm.valid) {
-            var party = this.partiesForm.value;
-
-            Parties.insert({
-                name: party.name,
-                description: party.description,
-                user: Meteor.userId()
-            });
-
-            //reset values to empty strings
-            this.partyForm.controls.name.updateValue('');
-            this.partyForm.controls.description.updateValue('');
-          }
-        }
-      }
+{{> DiffBox tutorialName="angular2-meteor" step="8.5"}}
 
 Do the same to `party-details.ts`:
 
-__`client/parties-details/party-details.ts`:__
-
-    Parties.update(party._id, {
-      name: party.name,
-      description: party.description,
-      user: Meteor.userId()
-    });
+{{> DiffBox tutorialName="angular2-meteor" step="8.6"}}
 
 
  So first we set the new party's owner to our current user's id and then push it to the parties collection like before.
@@ -190,58 +128,21 @@ This could get dangerously repetitive. This is an opportunity to see how service
 
 Let's create a `PartyService` for handling party changes:
 
-__`client/lib/party-service.ts`:__
-
-    export class PartyService {
-      add(party) { ... }
-      update (party) { ... }
-      remove(partyId) { ... }
-    }
+{{> DiffBox tutorialName="angular2-meteor" step="8.7"}}
 
 Looking at this code later, it may not be clear what these parameters are, so using types can help.
 
-__`client/lib/party-service.ts`:__
-
-    export class PartyService {
-      add(party:IParty) { ... }
-      update (party:IParty) { ... }
-      remove(partyId:string) { ... }
-    }
+{{> DiffBox tutorialName="angular2-meteor" step="8.8"}}
 
 Finally, let's refactor our party object calls into a function.
 
 We can use a function in the service to create our clean party objects.
 
-    getPartyObject(party) {
-      return {
-        name: party.name,
-        description: party.description,
-        user: Meteor.userId()
-      };
-    }
+{{> DiffBox tutorialName="angular2-meteor" step="8.9"}}
 
 The resulting service should look like this:
 
-__`client/lib/party-service.ts`:__
-
-  export class PartyService {
-    add(party:IParty) {
-      Parties.insert(this.getPartyObject(party));
-    }
-    update(party:IParty) {
-      Parties.update(party._id, this.getPartyObject(party));
-    }
-    remove(partyId:string) {
-      Parties.remove(partyId);
-    }
-    getPartyObject(party) {
-      return {
-        name: party.name,
-        description: party.description,
-        user: Meteor.userId()
-      };
-    }
-  }
+_{{> DiffBox tutorialName="angular2-meteor" step="8.10"}}
 
 Much cleaner.
 
@@ -255,7 +156,7 @@ This process should get easier, in fact, it should look this:
     add() {
       if (this.partiesForm.valid) {
         partyService.add(this.partiesForm.value);
-  ...
+        ...
 
 A note about the constructor syntax here:
 
@@ -268,28 +169,41 @@ Unfortunately, the syntax listed above isn't currently working. Keep in mind, An
 In `parties-list.ts`, `party-details.ts` and `party-form.ts` follow the instructions below.
 
 - `import {Inject} from 'angular2/angular2';`
-- `import {PartyService} from `client/lib/party-service';`
-- In the component, add  `viewInjector: [PartyService]`
+- `import {PartyService} from 'client/lib/party-service';`
+- In the component, add  `viewBindings: [PartyService]`
 
+```
     @Component({
         selector: 'parties-list',
-        viewInjector: [PartyService]
+        viewBindings: [PartyService]
     })
+```
 
 4. Inject partyService into the constructor and set `this.partyService` to the injected.
 
+```
     constructor(@Inject(PartyService) partyService:PartyService) {
       this.partyService = partyService;
+```
 
 5. Access the service through `this.partyService` in your methods.
 
+```
     this.partyService.remove(party._id)
+```
 
 I hope this syntax will clean up in the future.
+
+In the end, it should look like this:
+
+{{> DiffBox tutorialName="angular2-meteor" step="8.11"}}
+
 
 # Challenge
 
 Inject the PartyService into the three places it's needed.
+
+If you have difficulties, please checkout steps [8.12](https://github.com/ShMcK/ng2-socially-tutorial/commit/84379e8326e7bb392d9aebea5fd25dd782a6b684) or [8.13](https://github.com/ShMcK/ng2-socially-tutorial/commit/b87c18b8b61a026d0d2f44691c946c2c158e03b2) in the tutorial-repo.
 
 
 # Social login
@@ -302,6 +216,8 @@ To do this, we simply need to add the right packages in the console:
     meteor add accounts-twitter
 
 Now run the app.  when you will first press the login buttons of the social login, meteor will show you a wizard that will help you define your app.
+
+{{> DiffBox tutorialName="angular2-meteor" step="8.14"}}
 
 You can also skip the wizard and configure it manually like the explanation here: [http://docs.meteor.com/#meteor_loginwithexternalservice](http://docs.meteor.com/#meteor_loginwithexternalservice)
 
@@ -316,7 +232,6 @@ There are more social login services you can use:
 * Meteor developer account
 
 
-
 # Authentication With Routers
 
 Now that we prevented authorized users from changing parties they don't own,
@@ -326,15 +241,7 @@ We can easily prevent them from going into that view using our routes.
 
 We are going to use the `canActivate` router hook.
 
-__`client/party-details/party-details.ts`:__
-
-    export class PartyDetails {
-        constructor() {...}
-            canActivate() {
-              return Meteor.userId();
-            }
-        }
-    }
+{{> DiffBox tutorialName="angular2-meteor" step="8.15"}}
 
 Now, if a user is not logged in to the system, it won't be able to access that route.
 
@@ -342,18 +249,7 @@ The call to `Meteor.userId()` will return null if none is found, and will return
 
 We could even add a helpful alert here.
 
-__`client/party-details/party-details.ts`:__
-
-    export class PartyDetails {
-        constructor() {...}
-          canActivate() {
-            if (!Meteor.userId()) {
-              alert('Please login first');
-              return false;
-            }
-            return true;
-        }
-    }
+{{> DiffBox tutorialName="angular2-meteor" step="8.16"}}
 
 * NOTE: This approach is currently not working. *
 

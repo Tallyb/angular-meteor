@@ -3,21 +3,19 @@ var angularMeteor = angular.module('angular-meteor', [
   'angular-meteor.subscribe',
   'angular-meteor.collection',
   'angular-meteor.object',
-  'angular-meteor.template',
   'angular-meteor.user',
   'angular-meteor.methods',
   'angular-meteor.session',
   'angular-meteor.reactive-scope',
   'angular-meteor.utils',
-  'angular-meteor.camera',
-  'hashKeyCopier'
+  'angular-meteor.camera'
 ]);
 
 angularMeteor.run(['$compile', '$document', '$rootScope', function ($compile, $document, $rootScope) {
     // Recompile after iron:router builds page
-    if(typeof Router != 'undefined') {
+    if(Package['iron:router']) {
       var appLoaded = false;
-      Router.onAfterAction(function(req, res, next) {
+      Package['iron:router'].Router.onAfterAction(function(req, res, next) {
         Tracker.afterFlush(function() {
           if (!appLoaded) {
             $compile($document)($rootScope);
